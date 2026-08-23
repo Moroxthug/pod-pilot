@@ -12,6 +12,7 @@ const { composeMockupByStyle } = require('./lib/mockupEngine');
 const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
 const { researchTrends } = require('./lib/trendResearch');
 const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
+const { readPricingPresets, addPricingPreset, removePricingPreset } = require('./lib/pricingPresets');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -359,6 +360,40 @@ app.post('/api/trends/research', async (req, res) => {
     const focus = (req.body.focus || '').trim() || null;
     const result = await researchTrends({ focus });
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Pricing presets ----------
+
+app.get('/api/pricing/presets', async (req, res) => {
+  try {
+    const presets = await readPricingPresets();
+    res.json({ presets });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/pricing/presets', async (req, res) => {
+  try {
+    const { name, sizes } = req.body;
+    if (!name || !Array.isArray(sizes) || sizes.length === 0) {
+      return res.status(400).json({ error: 'name and a non-empty sizes array are required' });
+    }
+    const preset = await addPricingPreset({ name, sizes });
+    res.json({ preset });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/pricing/presets/:id', async (req, res) => {
+  try {
+    const removed = await removePricingPreset(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Preset not found' });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -268,3 +268,18 @@ textarea { width: 100%; font-family: inherit; }
   background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
   background-color: #f5f5f5;
 }
+
+/* Pricing */
+.pricing-bulk-row { display: flex; gap: 24px; margin: 18px 0; flex-wrap: wrap; }
+.pricing-bulk-row label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.pricing-bulk-input { display: flex; gap: 8px; }
+.pricing-bulk-input input { width: 100px; }
+.pricing-bulk-input .btn { margin-top: 0; padding: 10px 16px; }
+.pricing-table-wrap { overflow-x: auto; }
+.pricing-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pricing-table th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-size: 12px; border-bottom: 1px solid var(--border); }
+.pricing-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.pricing-table input { width: 90px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px; }
+.pricing-cell.good { color: var(--success); font-weight: 600; }
+.pricing-cell.bad { color: var(--danger); font-weight: 600; }
+.pricing-table tfoot td { font-weight: 700; border-bottom: none; padding-top: 14px; }

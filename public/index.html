@@ -18,6 +18,7 @@
       <button class="tab" data-tab="listing">Listing</button>
       <button class="tab" data-tab="batch">Batch</button>
       <button class="tab" data-tab="trends">Trends</button>
+      <button class="tab" data-tab="pricing">Pricing</button>
     </nav>
   </header>
 
@@ -267,10 +268,74 @@
       <div id="trends-results"></div>
     </section>
 
+    <!-- PRICING TAB -->
+    <section class="panel hidden" id="tab-pricing">
+      <div class="card">
+        <h2>Profit &amp; Pricing Calculator</h2>
+        <p class="muted">Enter your known cost per size from your print provider (Printify/Printful/etc). Profit is computed live as you set prices.</p>
+
+        <div class="form-row">
+          <label>Garment/product name
+            <input type="text" id="pricing-product-name" placeholder="e.g. Bella 3005 T-Shirt" />
+          </label>
+          <label>Load preset
+            <select id="pricing-preset-select">
+              <option value="">— none —</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="pricing-bulk-row">
+          <label>Set margin % for all
+            <div class="pricing-bulk-input">
+              <input type="number" id="pricing-margin-input" placeholder="40" min="0" max="95" />
+              <button id="pricing-apply-margin-btn" class="btn ghost">Apply</button>
+            </div>
+          </label>
+          <label>Set markup $ for all
+            <div class="pricing-bulk-input">
+              <input type="number" id="pricing-markup-input" placeholder="8.00" step="0.01" min="0" />
+              <button id="pricing-apply-markup-btn" class="btn ghost">Apply</button>
+            </div>
+          </label>
+        </div>
+
+        <div class="pricing-table-wrap">
+          <table class="pricing-table" id="pricing-table">
+            <thead>
+              <tr>
+                <th>Size</th>
+                <th>Cost ($)</th>
+                <th>Price ($)</th>
+                <th>Profit</th>
+                <th>Margin</th>
+              </tr>
+            </thead>
+            <tbody id="pricing-table-body"></tbody>
+            <tfoot>
+              <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td id="pricing-total-profit">—</td>
+                <td id="pricing-avg-margin">—</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="form-row" style="margin-top:16px;">
+          <button id="pricing-save-preset-btn" class="btn primary">Save as Preset</button>
+          <button id="pricing-delete-preset-btn" class="btn ghost">Delete Loaded Preset</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script src="/vendor/fabric.min.js"></script>
   <script src="/app.js"></script>
   <script src="/canvas.js"></script>
+  <script src="/pricing.js"></script>
 </body>
 </html>
