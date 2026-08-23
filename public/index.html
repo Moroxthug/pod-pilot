@@ -13,6 +13,7 @@
     </div>
     <nav class="tabs">
       <button class="tab active" data-tab="mockups">Mockups</button>
+      <button class="tab" data-tab="canvas">Canvas</button>
       <button class="tab" data-tab="templates">Templates</button>
       <button class="tab" data-tab="listing">Listing</button>
       <button class="tab" data-tab="batch">Batch</button>
@@ -79,6 +80,73 @@
           <button id="download-all-btn" class="btn primary">Download All (.zip)</button>
         </div>
         <div id="results-grid" class="results-grid"></div>
+      </div>
+    </section>
+
+    <!-- CANVAS TAB -->
+    <section class="panel hidden" id="tab-canvas">
+      <div class="canvas-layout">
+        <div class="canvas-rail">
+          <button class="rail-btn active" data-panel="text">
+            <span class="rail-icon">T</span>Text
+          </button>
+          <button class="rail-btn" data-panel="upload">
+            <span class="rail-icon">&#8593;</span>Upload
+          </button>
+          <button class="rail-btn" data-panel="designs">
+            <span class="rail-icon">&#9635;</span>My Designs
+          </button>
+          <button class="rail-btn" data-panel="shapes">
+            <span class="rail-icon">&#9679;</span>Shapes
+          </button>
+          <button class="rail-btn" data-panel="generate">
+            <span class="rail-icon">&#10022;</span>Generate
+          </button>
+        </div>
+
+        <div class="canvas-panel-content">
+          <div class="rail-panel" data-panel-content="text">
+            <button id="canvas-add-text-btn" class="btn primary" style="width:100%;">Add Text</button>
+          </div>
+          <div class="rail-panel hidden" data-panel-content="upload">
+            <p class="muted">Upload an image to place on the canvas.</p>
+            <input type="file" id="canvas-upload-input" accept="image/png,image/jpeg,image/webp" />
+          </div>
+          <div class="rail-panel hidden" data-panel-content="designs">
+            <p class="muted">Click a design to add it to the canvas.</p>
+            <div id="canvas-designs-grid" class="canvas-designs-grid"></div>
+          </div>
+          <div class="rail-panel hidden" data-panel-content="shapes">
+            <p class="muted">Basic shapes.</p>
+            <div class="shape-buttons">
+              <button class="btn ghost" data-shape="rect">Rectangle</button>
+              <button class="btn ghost" data-shape="circle">Circle</button>
+              <button class="btn ghost" data-shape="triangle">Triangle</button>
+            </div>
+          </div>
+          <div class="rail-panel hidden" data-panel-content="generate">
+            <p class="muted">Generate a design and place it on the canvas.</p>
+            <textarea id="canvas-generate-prompt" rows="4" placeholder="describe the design..."></textarea>
+            <button id="canvas-generate-btn" class="btn primary" style="width:100%; margin-top:10px;">Generate &amp; Add</button>
+          </div>
+        </div>
+
+        <div class="canvas-stage">
+          <div class="canvas-toolbar">
+            <span id="canvas-dims" class="muted">1200×1200px</span>
+            <div class="canvas-toolbar-spacer"></div>
+            <div id="canvas-object-controls" class="canvas-object-controls hidden">
+              <input type="color" id="canvas-fill-color" title="Color" />
+              <input type="number" id="canvas-font-size" min="8" max="400" title="Font size" style="width:64px;" />
+              <button id="canvas-delete-object" class="btn ghost" title="Delete">Delete</button>
+            </div>
+            <button id="canvas-download-btn" class="btn ghost">Download PNG</button>
+            <button id="canvas-save-btn" class="btn primary">Save as Design</button>
+          </div>
+          <div class="canvas-scroll">
+            <canvas id="fabric-canvas"></canvas>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -201,6 +269,8 @@
 
   </main>
 
+  <script src="/vendor/fabric.min.js"></script>
   <script src="/app.js"></script>
+  <script src="/canvas.js"></script>
 </body>
 </html>

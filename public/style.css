@@ -213,3 +213,58 @@ textarea { width: 100%; font-family: inherit; }
 .trend-why { font-size: 13px; color: var(--text-muted); margin: 0 0 10px; }
 .trend-angle { font-size: 13px; margin: 0 0 10px; font-style: italic; }
 .trend-keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+/* Canvas editor */
+.canvas-layout {
+  display: grid;
+  grid-template-columns: 96px 260px 1fr;
+  gap: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 720px;
+}
+.canvas-rail {
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+}
+.rail-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 14px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.rail-btn.active { color: var(--accent); background: rgba(124,92,255,0.08); }
+.rail-icon { font-size: 18px; font-weight: 700; }
+.canvas-panel-content { border-right: 1px solid var(--border); padding: 18px; }
+.rail-panel textarea { width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-family: inherit; }
+.canvas-designs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+.canvas-designs-grid img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.shape-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.canvas-stage { display: flex; flex-direction: column; background: #2a2a2a; }
+.canvas-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+.canvas-toolbar-spacer { flex: 1; }
+.canvas-toolbar .btn { margin-top: 0; padding: 8px 14px; font-size: 13px; }
+.canvas-object-controls { display: flex; align-items: center; gap: 8px; }
+.canvas-object-controls input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 6px; background: none; padding: 0; cursor: pointer; }
+.canvas-object-controls input[type="number"] { background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px; }
+.canvas-scroll { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 24px; }
+#fabric-canvas {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+  background-color: #f5f5f5;
+}

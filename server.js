@@ -11,6 +11,7 @@ const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
 const { composeMockupByStyle } = require('./lib/mockupEngine');
 const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
 const { researchTrends } = require('./lib/trendResearch');
+const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -20,7 +21,7 @@ const {
 } = require('./lib/blobStore');
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -132,6 +133,7 @@ app.post('/api/designs', memoryUpload.single('design'), async (req, res) => {
     const ext = (path.extname(req.file.originalname) || '.png').toLowerCase();
     const id = crypto.randomUUID();
     const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, req.file.buffer, req.file.mimetype);
+    await addDesignToLibrary({ id, url, source: 'upload' });
     res.json({ design: { id, url } });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -160,6 +162,7 @@ app.post('/api/designs/generate', memoryUpload.single('reference'), async (req, 
     const id = crypto.randomUUID();
     const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
     const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, buffer, mimeType);
+    await addDesignToLibrary({ id, url, source: 'generated', prompt });
 
     res.json({ design: { id, url } });
   } catch (err) {
@@ -185,6 +188,53 @@ app.post('/api/designs/analyze', memoryUpload.single('design'), async (req, res)
 
     const analysis = await analyzeDesign({ imageBuffer, mimeType });
     res.json({ analysis });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Designs library ----------
+
+app.get('/api/designs/library', async (req, res) => {
+  try {
+    const designs = await readDesignsLibrary();
+    res.json({ designs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/designs/library/:id', async (req, res) => {
+  try {
+    const removed = await removeDesignFromLibrary(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Design not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Canvas ----------
+
+// Saves a canvas export (data URL from <canvas>.toDataURL()) as a new design, so it feeds
+// straight into the same Mockups/Analysis flow as an upload or an AI generation.
+app.post('/api/canvas/save', async (req, res) => {
+  try {
+    const { dataUrl } = req.body;
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'dataUrl (data:image/... base64) is required' });
+    }
+    const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) return res.status(400).json({ error: 'Malformed data URL' });
+    const [, mimeType, base64] = match;
+    const buffer = Buffer.from(base64, 'base64');
+
+    const id = crypto.randomUUID();
+    const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
+    const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, buffer, mimeType);
+    await addDesignToLibrary({ id, url, source: 'canvas' });
+
+    res.json({ design: { id, url } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
