@@ -40,6 +40,7 @@ clearBtn.addEventListener('click', e => {
   dzEmpty.classList.remove('hidden');
   dzPreview.classList.add('hidden');
   clearBtn.classList.add('hidden');
+  document.getElementById('analysis-card').style.display = 'none';
   updateGenerateButton();
 });
 
@@ -53,12 +54,52 @@ async function uploadDesign(file) {
     return;
   }
   const data = await res.json();
-  state.design = data.design;
-  dzPreview.src = data.design.url;
+  setDesign(data.design);
+}
+
+function setDesign(design) {
+  state.design = design;
+  dzPreview.src = design.url;
   dzEmpty.classList.add('hidden');
   dzPreview.classList.remove('hidden');
   clearBtn.classList.remove('hidden');
   updateGenerateButton();
+  runAnalysis(design.url);
+}
+
+// ---------- Design analysis ----------
+async function runAnalysis(designUrl) {
+  const card = document.getElementById('analysis-card');
+  const status = document.getElementById('analysis-status');
+  card.style.display = 'block';
+  status.textContent = 'Analyzing…';
+  ['style', 'niche', 'colors', 'elements', 'strength', 'weakness', 'keywords'].forEach(k => {
+    document.getElementById(`analysis-${k}`).textContent = '';
+  });
+
+  try {
+    const res = await fetch('/api/designs/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ designUrl })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Analysis failed' }));
+      status.textContent = err.error || 'Analysis failed';
+      return;
+    }
+    const { analysis } = await res.json();
+    status.textContent = '';
+    document.getElementById('analysis-style').textContent = analysis.style;
+    document.getElementById('analysis-niche').textContent = analysis.niche;
+    document.getElementById('analysis-colors').textContent = (analysis.colors || []).join(', ');
+    document.getElementById('analysis-elements').textContent = (analysis.elements || []).join(', ');
+    document.getElementById('analysis-strength').textContent = analysis.strength;
+    document.getElementById('analysis-weakness').textContent = analysis.weakness;
+    document.getElementById('analysis-keywords').textContent = (analysis.suggestedKeywords || []).join(', ');
+  } catch (err) {
+    status.textContent = 'Analysis failed';
+  }
 }
 
 // ---------- Design generation ----------
@@ -80,12 +121,7 @@ document.getElementById('generate-form').addEventListener('submit', async e => {
       return;
     }
     const data = await res.json();
-    state.design = data.design;
-    dzPreview.src = data.design.url;
-    dzEmpty.classList.add('hidden');
-    dzPreview.classList.remove('hidden');
-    clearBtn.classList.remove('hidden');
-    updateGenerateButton();
+    setDesign(data.design);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Generate Design';

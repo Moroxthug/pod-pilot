@@ -9,7 +9,7 @@ const sharp = require('sharp');
 
 const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
 const { composeMockup } = require('./lib/mockupEngine');
-const { generateDesignImage } = require('./lib/aiDesign');
+const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -161,6 +161,29 @@ app.post('/api/designs/generate', memoryUpload.single('reference'), async (req, 
     const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, buffer, mimeType);
 
     res.json({ design: { id, url } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Auto-detects style, niche, colors, elements, and a commercial strength/weakness call-out
+// for a design — either an uploaded file or a URL to an already-uploaded/generated design.
+app.post('/api/designs/analyze', memoryUpload.single('design'), async (req, res) => {
+  try {
+    let imageBuffer = null;
+    let mimeType = null;
+    if (req.file) {
+      imageBuffer = req.file.buffer;
+      mimeType = req.file.mimetype;
+    } else if (req.body.designUrl) {
+      imageBuffer = await fetchBuffer(req.body.designUrl);
+      mimeType = 'image/png';
+    } else {
+      return res.status(400).json({ error: 'designUrl or an uploaded design is required' });
+    }
+
+    const analysis = await analyzeDesign({ imageBuffer, mimeType });
+    res.json({ analysis });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
