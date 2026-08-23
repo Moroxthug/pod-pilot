@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "generate:templates": "node -e \"require('./templates/generateBaseTemplates').generateBaseTemplates({force:true}).then(()=>console.log('done'))\"",
-    "generate:photo-templates": "node templates/generatePhotoTemplates.js"
+    "generate:photo-templates": "node templates/generatePhotoTemplates.js",
+    "generate:model-templates": "node templates/generateModelTemplates.js"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

@@ -33,6 +33,18 @@ const GARMENTS = {
   }
 };
 
+// On-model templates (person wearing the garment) — each generated via Gemini with a
+// standardized straight-on, mid-thigh-up framing (see templates/generateModelTemplates.js),
+// so a single printArea per garment covers the whole set reasonably well.
+const MODEL_TEMPLATES = [
+  { id: 'tshirt-model-male-black', garmentName: 'T-Shirt (Model)', colorName: 'Black — Male', printArea: { x: 640, y: 680, w: 720, h: 440 } },
+  { id: 'tshirt-model-male-white', garmentName: 'T-Shirt (Model)', colorName: 'White — Male', printArea: { x: 640, y: 680, w: 720, h: 440 } },
+  { id: 'tshirt-model-female-black', garmentName: 'T-Shirt (Model)', colorName: 'Black — Female', printArea: { x: 640, y: 680, w: 720, h: 440 } },
+  { id: 'tshirt-model-female-white', garmentName: 'T-Shirt (Model)', colorName: 'White — Female', printArea: { x: 640, y: 680, w: 720, h: 440 } },
+  { id: 'hoodie-model-male-black', garmentName: 'Hoodie (Model)', colorName: 'Black — Male', printArea: { x: 680, y: 780, w: 640, h: 420 } },
+  { id: 'sweatshirt-model-female-white', garmentName: 'Sweatshirt (Model)', colorName: 'White — Female', printArea: { x: 640, y: 750, w: 720, h: 440 } }
+];
+
 function buildDefaultTemplateList() {
   const list = [];
   for (const [garmentId, garment] of Object.entries(GARMENTS)) {
@@ -65,7 +77,22 @@ function buildDefaultTemplateList() {
       }
     }
   }
+
+  for (const tpl of MODEL_TEMPLATES) {
+    list.push({
+      id: tpl.id,
+      garment: tpl.id,
+      garmentName: tpl.garmentName,
+      color: 'model',
+      colorName: tpl.colorName,
+      printArea: tpl.printArea,
+      source: 'default',
+      style: 'photo',
+      baseImage: `/templates-model/${tpl.id}.jpg`
+    });
+  }
+
   return list;
 }
 
-module.exports = { CANVAS, GARMENT_COLORS, GARMENTS, buildDefaultTemplateList };
+module.exports = { CANVAS, GARMENT_COLORS, GARMENTS, MODEL_TEMPLATES, buildDefaultTemplateList };
