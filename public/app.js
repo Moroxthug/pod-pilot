@@ -301,14 +301,61 @@ document.getElementById('template-form').addEventListener('submit', async e => {
 
 // ---------- Placement adjustment ----------
 // One shared drag/scale/rotate transform, applied identically across every selected template's
-// own print area — lets the user override the default auto-fit-centered placement.
+// own print area — lets the user override the default auto-fit-centered placement. The canvas
+// shows an actual garment outline with Printify's real max front print area (Gildan 5000/18000:
+// 12"x16" @300dpi, a 3:4 aspect ratio) drawn to scale, so placement decisions are made against
+// the real product, not an abstract square.
+// The garment-outline SVGs are authored on a 700x700 viewBox but stretched as a CSS
+// background over the (smaller) canvas element, so proportions match regardless of the
+// canvas's own pixel size — the print-area rect below is scaled into that same 480 space.
+const PRINT_AREA_RECT = { left: 160, top: 192, width: 159, height: 213 }; // 3:4 aspect, chest-centered
+
 state.placement = null;
 let placementCanvasFabric = null;
 let placementImageObj = null;
+let placementGarmentType = null;
+
+function garmentTypeForId(id) {
+  if (id.includes('hoodie')) return 'sweatshirt';
+  if (id.includes('sweatshirt')) return 'sweatshirt';
+  return 'tshirt';
+}
+
+function pickOutlineForSelection() {
+  for (const id of state.selectedTemplateIds) {
+    const tpl = state.templates.find(t => t.id === id);
+    if (tpl && (tpl.garment === 'hoodie' || tpl.garment === 'sweatshirt')) return 'sweatshirt';
+  }
+  return 'tshirt';
+}
+
+function setPlacementBackground(type) {
+  if (placementGarmentType === type) return;
+  placementGarmentType = type;
+  document.getElementById('placement-canvas').style.backgroundImage = `url(/garment-outlines/${type}.svg)`;
+}
 
 function initPlacementCanvas() {
   if (placementCanvasFabric) return placementCanvasFabric;
   placementCanvasFabric = new fabric.Canvas('placement-canvas', { selection: false });
+
+  const printAreaBox = new fabric.Rect({
+    left: PRINT_AREA_RECT.left + PRINT_AREA_RECT.width / 2,
+    top: PRINT_AREA_RECT.top + PRINT_AREA_RECT.height / 2,
+    originX: 'center',
+    originY: 'center',
+    width: PRINT_AREA_RECT.width,
+    height: PRINT_AREA_RECT.height,
+    fill: 'transparent',
+    stroke: '#e0245e',
+    strokeWidth: 2,
+    strokeDashArray: [8, 6],
+    selectable: false,
+    evented: false,
+    excludeFromExport: true
+  });
+  placementCanvasFabric.add(printAreaBox);
+
   placementCanvasFabric.on('object:modified', updatePlacementFromCanvas);
   placementCanvasFabric.on('object:scaling', updatePlacementFromCanvas);
   placementCanvasFabric.on('object:moving', updatePlacementFromCanvas);
@@ -318,15 +365,14 @@ function initPlacementCanvas() {
 
 async function loadDesignIntoPlacementCanvas(designUrl) {
   const canvas = initPlacementCanvas();
-  canvas.clear();
+  if (placementImageObj) canvas.remove(placementImageObj);
   placementImageObj = null;
-  const size = canvas.getWidth();
+
   const img = await fabric.FabricImage.fromURL(designUrl, { crossOrigin: 'anonymous' });
-  const baselineSize = size * 0.6;
-  const scaleToFit = baselineSize / Math.max(img.width, img.height);
+  const scaleToFit = Math.min(PRINT_AREA_RECT.width / img.width, PRINT_AREA_RECT.height / img.height);
   img.set({
-    left: size / 2,
-    top: size / 2,
+    left: PRINT_AREA_RECT.left + PRINT_AREA_RECT.width / 2,
+    top: PRINT_AREA_RECT.top + PRINT_AREA_RECT.height / 2,
     originX: 'center',
     originY: 'center',
     scaleX: scaleToFit,
@@ -343,11 +389,12 @@ async function loadDesignIntoPlacementCanvas(designUrl) {
 
 function updatePlacementFromCanvas() {
   if (!placementImageObj) return;
-  const size = placementCanvasFabric.getWidth();
   const obj = placementImageObj;
+  const areaCenterX = PRINT_AREA_RECT.left + PRINT_AREA_RECT.width / 2;
+  const areaCenterY = PRINT_AREA_RECT.top + PRINT_AREA_RECT.height / 2;
   state.placement = {
-    offsetXPct: (obj.left - size / 2) / size,
-    offsetYPct: (obj.top - size / 2) / size,
+    offsetXPct: (obj.left - areaCenterX) / PRINT_AREA_RECT.width,
+    offsetYPct: (obj.top - areaCenterY) / PRINT_AREA_RECT.height,
     scalePct: obj.scaleX / obj._baselineScale,
     rotationDeg: Math.round(obj.angle || 0)
   };
@@ -361,6 +408,7 @@ function refreshPlacementCard() {
   const card = document.getElementById('placement-card');
   if (state.design && state.selectedTemplateIds.size > 0) {
     card.style.display = 'block';
+    setPlacementBackground(pickOutlineForSelection());
     if (!placementImageObj || placementImageObj._loadedUrl !== state.design.url) {
       loadDesignIntoPlacementCanvas(state.design.url);
     }

@@ -79,9 +79,12 @@ function buildDefaultTemplateList() {
   }
 
   for (const tpl of MODEL_TEMPLATES) {
+    const garmentCategory = tpl.id.startsWith('hoodie') ? 'hoodie'
+      : tpl.id.startsWith('sweatshirt') ? 'sweatshirt'
+      : 'tshirt';
     list.push({
       id: tpl.id,
-      garment: tpl.id,
+      garment: garmentCategory,
       garmentName: tpl.garmentName,
       color: 'model',
       colorName: tpl.colorName,
