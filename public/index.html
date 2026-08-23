@@ -15,6 +15,8 @@
       <button class="tab active" data-tab="mockups">Mockups</button>
       <button class="tab" data-tab="templates">Templates</button>
       <button class="tab" data-tab="listing">Listing</button>
+      <button class="tab" data-tab="batch">Batch</button>
+      <button class="tab" data-tab="trends">Trends</button>
     </nav>
   </header>
 
@@ -145,6 +147,56 @@
         <label>Description</label>
         <textarea id="listing-description" rows="6" readonly></textarea>
       </div>
+    </section>
+
+    <!-- BATCH TAB -->
+    <section class="panel hidden" id="tab-batch">
+      <div class="card">
+        <h2>Batch Generate</h2>
+        <p class="muted">One design prompt per line. Each gets generated, analyzed, and turned into mockups for the templates you pick below.</p>
+        <form id="batch-form" class="template-form">
+          <div class="form-row">
+            <label class="grow">Prompts (one per line)
+              <textarea name="prompts" rows="5" placeholder="retro sunset surf badge, orange and cream&#10;minimalist mountain line art, forest green&#10;funny cat mom quote, pastel pink"></textarea>
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Select Templates</h2>
+        <div id="batch-template-picker" class="template-picker">
+          <p class="muted">Loading templates…</p>
+        </div>
+        <button id="batch-run-btn" class="btn primary" disabled>Run Batch</button>
+        <span id="batch-progress" class="muted"></span>
+      </div>
+
+      <div class="card" id="batch-results-card" style="display:none;">
+        <div class="results-header">
+          <h2>Batch Results</h2>
+          <button id="batch-download-all-btn" class="btn primary">Download All Mockups (.zip)</button>
+        </div>
+        <div id="batch-results-list"></div>
+      </div>
+    </section>
+
+    <!-- TRENDS TAB -->
+    <section class="panel hidden" id="tab-trends">
+      <div class="card">
+        <h2>Trend Research</h2>
+        <p class="muted">Live web-grounded research on what's currently trending for POD apparel — not generic evergreen advice.</p>
+        <form id="trends-form" class="template-form">
+          <div class="form-row">
+            <label class="grow">Focus niche (optional)
+              <input type="text" name="focus" placeholder="e.g. pet lovers, gym humor, teacher gifts — leave blank for general spread" />
+            </label>
+          </div>
+          <button type="submit" class="btn primary" id="trends-run-btn">Research Trends</button>
+        </form>
+      </div>
+
+      <div id="trends-results"></div>
     </section>
 
   </main>

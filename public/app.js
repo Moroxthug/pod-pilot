@@ -2,6 +2,7 @@ const state = {
   design: null, // { id, url }
   templates: [],
   selectedTemplateIds: new Set(),
+  batchSelectedTemplateIds: new Set(),
   lastMockups: null
 };
 
@@ -133,27 +134,29 @@ async function loadTemplates() {
   const res = await fetch('/api/templates');
   const data = await res.json();
   state.templates = data.templates;
-  renderTemplatePicker();
+  renderTemplatePicker('template-picker', state.selectedTemplateIds, updateGenerateButton);
+  renderTemplatePicker('batch-template-picker', state.batchSelectedTemplateIds, updateBatchRunButton);
   renderTemplateManager();
 }
 
-function renderTemplatePicker() {
-  const picker = document.getElementById('template-picker');
+function renderTemplatePicker(containerId, selectedSet, onChange) {
+  const picker = document.getElementById(containerId);
   picker.innerHTML = '';
   for (const tpl of state.templates) {
     const el = document.createElement('div');
     el.className = 'template-option';
+    if (selectedSet.has(tpl.id)) el.classList.add('selected');
     el.innerHTML = `<img src="${tpl.baseImage}" alt="${tpl.garmentName} ${tpl.colorName}" />
       <div class="label">${tpl.garmentName}<br>${tpl.colorName}</div>`;
     el.addEventListener('click', () => {
-      if (state.selectedTemplateIds.has(tpl.id)) {
-        state.selectedTemplateIds.delete(tpl.id);
+      if (selectedSet.has(tpl.id)) {
+        selectedSet.delete(tpl.id);
         el.classList.remove('selected');
       } else {
-        state.selectedTemplateIds.add(tpl.id);
+        selectedSet.add(tpl.id);
         el.classList.add('selected');
       }
-      updateGenerateButton();
+      onChange();
     });
     picker.appendChild(el);
   }
@@ -265,16 +268,19 @@ function renderResults(mockups) {
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-document.getElementById('download-all-btn').addEventListener('click', async () => {
-  if (!state.lastMockups || !state.lastMockups.length) return;
-  const btn = document.getElementById('download-all-btn');
+document.getElementById('download-all-btn').addEventListener('click', () => {
+  downloadMockupsZip(state.lastMockups, document.getElementById('download-all-btn'), 'Download All (.zip)');
+});
+
+async function downloadMockupsZip(mockups, btn, idleLabel) {
+  if (!mockups || !mockups.length) return;
   btn.disabled = true;
   btn.textContent = 'Zipping…';
   try {
     const res = await fetch('/api/mockups/zip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mockups: state.lastMockups })
+      body: JSON.stringify({ mockups })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Zip failed' }));
@@ -292,9 +298,9 @@ document.getElementById('download-all-btn').addEventListener('click', async () =
     URL.revokeObjectURL(url);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Download All (.zip)';
+    btn.textContent = idleLabel;
   }
-});
+}
 
 // ---------- Listing generator ----------
 document.getElementById('listing-form').addEventListener('submit', async e => {
@@ -317,5 +323,166 @@ document.getElementById('listing-form').addEventListener('submit', async e => {
   document.getElementById('listing-description').value = data.description;
   document.getElementById('listing-tags').innerHTML = data.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
 });
+
+// ---------- Batch processing ----------
+const batchRunBtn = document.getElementById('batch-run-btn');
+
+function updateBatchRunButton() {
+  const prompts = getBatchPrompts();
+  batchRunBtn.disabled = !(prompts.length > 0 && state.batchSelectedTemplateIds.size > 0);
+}
+
+function getBatchPrompts() {
+  const raw = document.querySelector('#batch-form textarea[name="prompts"]').value;
+  return raw.split('\n').map(s => s.trim()).filter(Boolean);
+}
+
+document.querySelector('#batch-form textarea[name="prompts"]').addEventListener('input', updateBatchRunButton);
+
+batchRunBtn.addEventListener('click', async () => {
+  const prompts = getBatchPrompts();
+  const templateIds = Array.from(state.batchSelectedTemplateIds);
+  if (!prompts.length || !templateIds.length) return;
+
+  batchRunBtn.disabled = true;
+  const progress = document.getElementById('batch-progress');
+  const resultsCard = document.getElementById('batch-results-card');
+  const resultsList = document.getElementById('batch-results-list');
+  resultsCard.style.display = 'block';
+  resultsList.innerHTML = '';
+
+  const allMockups = [];
+
+  for (let i = 0; i < prompts.length; i++) {
+    const prompt = prompts[i];
+    progress.textContent = `${i + 1} / ${prompts.length}: ${prompt.slice(0, 40)}…`;
+
+    const item = document.createElement('div');
+    item.className = 'batch-item';
+    item.innerHTML = `
+      <div class="batch-item-header">
+        <img alt="" />
+        <div>
+          <div class="batch-item-title">${escapeHtml(prompt)}</div>
+          <div class="batch-item-sub" data-role="sub"></div>
+        </div>
+        <div class="batch-item-status" data-role="status">generating…</div>
+      </div>
+      <div class="batch-mockup-row" data-role="mockups"></div>
+    `;
+    resultsList.appendChild(item);
+    const img = item.querySelector('img');
+    const sub = item.querySelector('[data-role="sub"]');
+    const status = item.querySelector('[data-role="status"]');
+    const mockupRow = item.querySelector('[data-role="mockups"]');
+
+    try {
+      const genRes = await fetch('/api/designs/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      if (!genRes.ok) throw new Error((await genRes.json().catch(() => ({}))).error || 'Generation failed');
+      const { design } = await genRes.json();
+      img.src = design.url;
+
+      status.textContent = 'analyzing…';
+      analyzeInBackground(design.url, sub);
+
+      status.textContent = 'making mockups…';
+      const mockRes = await fetch('/api/mockups/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ designUrl: design.url, templateIds })
+      });
+      if (!mockRes.ok) throw new Error((await mockRes.json().catch(() => ({}))).error || 'Mockup generation failed');
+      const { mockups } = await mockRes.json();
+      allMockups.push(...mockups);
+      mockupRow.innerHTML = mockups.map(m => `<img src="${m.url}" alt="${m.garmentName} ${m.colorName}" title="${m.garmentName} ${m.colorName}" />`).join('');
+      status.textContent = 'done';
+    } catch (err) {
+      status.textContent = `error: ${err.message}`;
+    }
+  }
+
+  progress.textContent = `Done — ${prompts.length} designs, ${allMockups.length} mockups`;
+  state.lastBatchMockups = allMockups;
+  batchRunBtn.disabled = false;
+});
+
+async function analyzeInBackground(designUrl, subEl) {
+  try {
+    const res = await fetch('/api/designs/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ designUrl })
+    });
+    if (!res.ok) return;
+    const { analysis } = await res.json();
+    subEl.textContent = `${analysis.style} · ${analysis.niche}`;
+  } catch {
+    // best-effort — batch shouldn't stall on analysis failures
+  }
+}
+
+document.getElementById('batch-download-all-btn').addEventListener('click', () => {
+  downloadMockupsZip(state.lastBatchMockups, document.getElementById('batch-download-all-btn'), 'Download All Mockups (.zip)');
+});
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------- Trend research ----------
+document.getElementById('trends-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('trends-run-btn');
+  const container = document.getElementById('trends-results');
+  btn.disabled = true;
+  btn.textContent = 'Researching…';
+  container.innerHTML = '<p class="muted">Searching the live web for current trends — this can take 15–30s…</p>';
+  try {
+    const res = await fetch('/api/trends/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ focus: form.focus.value })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Research failed' }));
+      container.innerHTML = `<p class="muted">${err.error || 'Research failed'}</p>`;
+      return;
+    }
+    const { trends } = await res.json();
+    container.innerHTML = `<div class="trend-grid">${trends.map(renderTrendCard).join('')}</div>`;
+    container.querySelectorAll('[data-use-angle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('.tab[data-tab="mockups"]').click();
+        const promptInput = document.querySelector('#generate-form input[name="prompt"]');
+        promptInput.value = btn.dataset.useAngle;
+        promptInput.focus();
+      });
+    });
+  } catch (err) {
+    container.innerHTML = '<p class="muted">Research failed.</p>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Research Trends';
+  }
+});
+
+function renderTrendCard(t) {
+  const level = (t.competitionLevel || 'medium').toLowerCase();
+  return `
+    <div class="trend-card">
+      <span class="trend-competition ${level}">${t.competitionLevel || 'Medium'} competition</span>
+      <h3>${escapeHtml(t.niche || '')}</h3>
+      <p class="trend-why">${escapeHtml(t.whyTrending || '')}</p>
+      <p class="trend-angle">"${escapeHtml(t.designAngle || '')}"</p>
+      <div class="trend-keywords">${(t.keywords || []).map(k => `<span class="tag-pill">${escapeHtml(k)}</span>`).join('')}</div>
+      <button class="btn primary" data-use-angle="${escapeHtml(t.designAngle || t.niche || '')}">Generate This Design</button>
+    </div>
+  `;
+}
 
 loadTemplates();

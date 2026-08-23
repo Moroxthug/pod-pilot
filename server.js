@@ -10,6 +10,7 @@ const sharp = require('sharp');
 const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
 const { composeMockup } = require('./lib/mockupEngine');
 const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
+const { researchTrends } = require('./lib/trendResearch');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -301,6 +302,18 @@ app.post('/api/listing/generate', (req, res) => {
 function capitalize(s) {
   return String(s).replace(/\b\w/g, c => c.toUpperCase());
 }
+
+// ---------- Trend research ----------
+
+app.post('/api/trends/research', async (req, res) => {
+  try {
+    const focus = (req.body.focus || '').trim() || null;
+    const result = await researchTrends({ focus });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
