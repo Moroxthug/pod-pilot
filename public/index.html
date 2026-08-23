@@ -34,6 +34,16 @@
             <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
           </div>
           <button id="clear-design" class="btn ghost hidden">Remove design</button>
+
+          <div class="generate-divider">or generate one</div>
+          <form id="generate-form" class="template-form">
+            <div class="form-row">
+              <label class="grow">Describe the design
+                <input type="text" name="prompt" placeholder="retro sunset surf badge, orange and cream, bold serif text 'SALT LIFE'" required />
+              </label>
+            </div>
+            <button type="submit" class="btn primary" id="generate-design-btn">Generate Design</button>
+          </form>
         </div>
 
         <div class="card">

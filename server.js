@@ -9,6 +9,7 @@ const sharp = require('sharp');
 
 const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
 const { composeMockup } = require('./lib/mockupEngine');
+const { generateDesignImage } = require('./lib/aiDesign');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -130,6 +131,35 @@ app.post('/api/designs', memoryUpload.single('design'), async (req, res) => {
     const ext = (path.extname(req.file.originalname) || '.png').toLowerCase();
     const id = crypto.randomUUID();
     const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, req.file.buffer, req.file.mimetype);
+    res.json({ design: { id, url } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generates a design from a text prompt via Gemini, optionally guided by a reference image
+// (either an uploaded file under the "reference" field, or a previously-uploaded design's URL).
+app.post('/api/designs/generate', memoryUpload.single('reference'), async (req, res) => {
+  try {
+    const prompt = (req.body.prompt || '').trim();
+    if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+    let referenceImageBuffer = null;
+    let referenceMimeType = null;
+    if (req.file) {
+      referenceImageBuffer = req.file.buffer;
+      referenceMimeType = req.file.mimetype;
+    } else if (req.body.referenceUrl) {
+      referenceImageBuffer = await fetchBuffer(req.body.referenceUrl);
+      referenceMimeType = 'image/png';
+    }
+
+    const { buffer, mimeType } = await generateDesignImage({ prompt, referenceImageBuffer, referenceMimeType });
+
+    const id = crypto.randomUUID();
+    const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
+    const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, buffer, mimeType);
+
     res.json({ design: { id, url } });
   } catch (err) {
     res.status(500).json({ error: err.message });

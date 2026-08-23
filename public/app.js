@@ -61,6 +61,37 @@ async function uploadDesign(file) {
   updateGenerateButton();
 }
 
+// ---------- Design generation ----------
+document.getElementById('generate-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('generate-design-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  try {
+    const res = await fetch('/api/designs/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: form.prompt.value, referenceUrl: state.design ? state.design.url : undefined })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Generation failed' }));
+      alert(err.error || 'Generation failed');
+      return;
+    }
+    const data = await res.json();
+    state.design = data.design;
+    dzPreview.src = data.design.url;
+    dzEmpty.classList.add('hidden');
+    dzPreview.classList.remove('hidden');
+    clearBtn.classList.remove('hidden');
+    updateGenerateButton();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Design';
+  }
+});
+
 // ---------- Templates ----------
 async function loadTemplates() {
   const res = await fetch('/api/templates');
