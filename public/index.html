@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>POD Pilot</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">POD</span><span class="brand-mark accent">PILOT</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="mockups">Mockups</button>
+      <button class="tab" data-tab="templates">Templates</button>
+      <button class="tab" data-tab="listing">Listing</button>
+    </nav>
+  </header>
+
+  <main class="app">
+
+    <!-- MOCKUPS TAB -->
+    <section class="panel" id="tab-mockups">
+      <div class="grid-2">
+        <div class="card dropzone-card">
+          <h2>Design</h2>
+          <div id="dropzone" class="dropzone">
+            <div id="dropzone-empty">
+              <p class="dz-title">Drop your design here</p>
+              <p class="dz-sub">or click to browse — PNG, JPG, WEBP</p>
+            </div>
+            <img id="design-preview" class="hidden" alt="Design preview" />
+            <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+          </div>
+          <button id="clear-design" class="btn ghost hidden">Remove design</button>
+        </div>
+
+        <div class="card">
+          <h2>Select Templates</h2>
+          <div id="template-picker" class="template-picker">
+            <p class="muted">Loading templates…</p>
+          </div>
+          <button id="generate-btn" class="btn primary" disabled>Generate Mockups</button>
+        </div>
+      </div>
+
+      <div class="card" id="results-card" style="display:none;">
+        <div class="results-header">
+          <h2>Mockups</h2>
+          <button id="download-all-btn" class="btn primary">Download All (.zip)</button>
+        </div>
+        <div id="results-grid" class="results-grid"></div>
+      </div>
+    </section>
+
+    <!-- TEMPLATES TAB -->
+    <section class="panel hidden" id="tab-templates">
+      <div class="card">
+        <h2>Default Templates</h2>
+        <p class="muted">Flat-lay garment mockups, generated locally — no downloads, no licensing.</p>
+        <div id="default-template-grid" class="template-grid"></div>
+      </div>
+
+      <div class="card">
+        <h2>Add Your Own Blank Template</h2>
+        <p class="muted">Upload a blank garment photo. Set the print area (chest box) as a % of the image so designs land in the right spot.</p>
+        <form id="template-form" class="template-form">
+          <div class="form-row">
+            <label>Garment name<input type="text" name="garmentName" placeholder="e.g. Tank Top" required /></label>
+            <label>Color name<input type="text" name="colorName" placeholder="e.g. Navy" required /></label>
+          </div>
+          <div class="form-row">
+            <label>Image<input type="file" name="image" accept="image/png,image/jpeg,image/webp" required /></label>
+          </div>
+          <div class="form-row">
+            <label>Print area X %<input type="number" name="x" min="0" max="100" value="35" /></label>
+            <label>Print area Y %<input type="number" name="y" min="0" max="100" value="31" /></label>
+            <label>Print area W %<input type="number" name="w" min="1" max="100" value="30" /></label>
+            <label>Print area H %<input type="number" name="h" min="1" max="100" value="35" /></label>
+          </div>
+          <button type="submit" class="btn primary">Add Template</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Custom Templates</h2>
+        <div id="custom-template-grid" class="template-grid">
+          <p class="muted">None yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LISTING TAB -->
+    <section class="panel hidden" id="tab-listing">
+      <div class="card">
+        <h2>Listing Content Generator</h2>
+        <p class="muted">Heuristic generator — no AI key required. Good starting point for SEO title/tags/description.</p>
+        <form id="listing-form" class="template-form">
+          <div class="form-row">
+            <label class="grow">Keywords (comma-separated)
+              <input type="text" name="keywords" placeholder="retro sunset, vintage surf, beach vibes" required />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Style<input type="text" name="style" placeholder="vintage" /></label>
+            <label>Niche<input type="text" name="niche" placeholder="surf" /></label>
+          </div>
+          <button type="submit" class="btn primary">Generate Listing Content</button>
+        </form>
+      </div>
+
+      <div class="card" id="listing-result" style="display:none;">
+        <h2>Result</h2>
+        <label>Title</label>
+        <input id="listing-title" type="text" readonly />
+        <label>Tags</label>
+        <div id="listing-tags" class="tag-list"></div>
+        <label>Description</label>
+        <textarea id="listing-description" rows="6" readonly></textarea>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
