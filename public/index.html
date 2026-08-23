@@ -40,9 +40,22 @@
           <button id="clear-design" class="btn ghost hidden">Remove design</button>
 
           <div class="generate-divider">or generate one</div>
+
+          <div class="ai-mode-tabs">
+            <button type="button" class="ai-mode-btn active" data-mode="generate">Generate</button>
+            <button type="button" class="ai-mode-btn" data-mode="edit">Edit</button>
+            <button type="button" class="ai-mode-btn" data-mode="remix">Remix</button>
+          </div>
+          <p id="ai-mode-hint" class="muted" style="margin:6px 0 10px;">Creates a new design from your description.</p>
+
+          <div id="ai-remix-picker" class="hidden">
+            <p class="muted">Select 1+ designs to combine/remix:</p>
+            <div id="ai-remix-grid" class="canvas-designs-grid"></div>
+          </div>
+
           <form id="generate-form" class="template-form">
             <div class="form-row">
-              <label class="grow">Describe the design
+              <label class="grow" id="ai-prompt-label">Describe the design
                 <input type="text" name="prompt" placeholder="retro sunset surf badge, orange and cream, bold serif text 'SALT LIFE'" required />
               </label>
             </div>

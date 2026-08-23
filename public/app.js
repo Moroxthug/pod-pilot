@@ -103,18 +103,88 @@ async function runAnalysis(designUrl) {
   }
 }
 
-// ---------- Design generation ----------
+// ---------- Design generation (Generate / Edit / Remix) ----------
+state.aiMode = 'generate';
+state.remixSelectedUrls = new Set();
+
+const AI_MODE_HINTS = {
+  generate: 'Creates a new design from your description.',
+  edit: 'Edits your currently loaded design based on your instruction (e.g. "change the background to navy blue").',
+  remix: 'Blends the selected designs below into one new design based on your description.'
+};
+const AI_MODE_BUTTON_LABELS = {
+  generate: 'Generate Design',
+  edit: 'Edit Design',
+  remix: 'Remix Designs'
+};
+
+document.querySelectorAll('.ai-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ai-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.aiMode = btn.dataset.mode;
+    document.getElementById('ai-mode-hint').textContent = AI_MODE_HINTS[state.aiMode];
+    document.getElementById('generate-design-btn').textContent = AI_MODE_BUTTON_LABELS[state.aiMode];
+    document.getElementById('ai-remix-picker').classList.toggle('hidden', state.aiMode !== 'remix');
+    if (state.aiMode === 'remix') loadRemixGrid();
+  });
+});
+
+async function loadRemixGrid() {
+  const grid = document.getElementById('ai-remix-grid');
+  grid.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const res = await fetch('/api/designs/library');
+    const { designs } = await res.json();
+    if (!designs.length) {
+      grid.innerHTML = '<p class="muted">No designs yet — generate or upload one first.</p>';
+      return;
+    }
+    grid.innerHTML = designs.map(d => `<img src="${d.url}" data-url="${d.url}" alt="design" />`).join('');
+    grid.querySelectorAll('img').forEach(imgEl => {
+      imgEl.addEventListener('click', () => {
+        const url = imgEl.dataset.url;
+        if (state.remixSelectedUrls.has(url)) {
+          state.remixSelectedUrls.delete(url);
+          imgEl.classList.remove('selected');
+        } else {
+          state.remixSelectedUrls.add(url);
+          imgEl.classList.add('selected');
+        }
+      });
+    });
+  } catch {
+    grid.innerHTML = '<p class="muted">Failed to load designs.</p>';
+  }
+}
+
 document.getElementById('generate-form').addEventListener('submit', async e => {
   e.preventDefault();
   const form = e.target;
   const btn = document.getElementById('generate-design-btn');
+
+  const body = { prompt: form.prompt.value, mode: state.aiMode };
+  if (state.aiMode === 'edit') {
+    if (!state.design) {
+      alert('Load or generate a design first, then switch to Edit.');
+      return;
+    }
+    body.referenceUrls = [state.design.url];
+  } else if (state.aiMode === 'remix') {
+    if (state.remixSelectedUrls.size === 0) {
+      alert('Select at least one design to remix.');
+      return;
+    }
+    body.referenceUrls = Array.from(state.remixSelectedUrls);
+  }
+
   btn.disabled = true;
-  btn.textContent = 'Generating…';
+  btn.textContent = 'Working…';
   try {
     const res = await fetch('/api/designs/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: form.prompt.value, referenceUrl: state.design ? state.design.url : undefined })
+      body: JSON.stringify(body)
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Generation failed' }));
@@ -125,7 +195,7 @@ document.getElementById('generate-form').addEventListener('submit', async e => {
     setDesign(data.design);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Generate Design';
+    btn.textContent = AI_MODE_BUTTON_LABELS[state.aiMode];
   }
 });
 

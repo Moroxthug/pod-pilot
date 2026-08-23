@@ -141,29 +141,39 @@ app.post('/api/designs', memoryUpload.single('design'), async (req, res) => {
   }
 });
 
-// Generates a design from a text prompt via Gemini, optionally guided by a reference image
-// (either an uploaded file under the "reference" field, or a previously-uploaded design's URL).
-app.post('/api/designs/generate', memoryUpload.single('reference'), async (req, res) => {
+// Generates a design from a text prompt via Gemini. mode "generate" is text-only; "edit" takes
+// one reference image + an instruction; "remix" blends multiple reference images. References
+// can come from uploaded files (field "references", up to 4) and/or a JSON array of already-
+// uploaded/library design URLs ("referenceUrls") — both can be combined in one request.
+app.post('/api/designs/generate', memoryUpload.array('references', 4), async (req, res) => {
   try {
     const prompt = (req.body.prompt || '').trim();
     if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
-    let referenceImageBuffer = null;
-    let referenceMimeType = null;
-    if (req.file) {
-      referenceImageBuffer = req.file.buffer;
-      referenceMimeType = req.file.mimetype;
-    } else if (req.body.referenceUrl) {
-      referenceImageBuffer = await fetchBuffer(req.body.referenceUrl);
-      referenceMimeType = 'image/png';
+    const mode = ['generate', 'edit', 'remix'].includes(req.body.mode) ? req.body.mode : 'generate';
+
+    const referenceImages = (req.files || []).map(f => ({ buffer: f.buffer, mimeType: f.mimetype }));
+
+    let referenceUrls = [];
+    if (Array.isArray(req.body.referenceUrls)) referenceUrls = req.body.referenceUrls;
+    else if (req.body.referenceUrls) referenceUrls = [req.body.referenceUrls];
+    else if (req.body.referenceUrl) referenceUrls = [req.body.referenceUrl];
+
+    for (const url of referenceUrls) {
+      const buffer = await fetchBuffer(url);
+      referenceImages.push({ buffer, mimeType: 'image/png' });
     }
 
-    const { buffer, mimeType } = await generateDesignImage({ prompt, referenceImageBuffer, referenceMimeType });
+    if ((mode === 'edit' || mode === 'remix') && referenceImages.length === 0) {
+      return res.status(400).json({ error: `${mode} mode requires at least one reference image` });
+    }
+
+    const { buffer, mimeType } = await generateDesignImage({ prompt, mode, referenceImages });
 
     const id = crypto.randomUUID();
     const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
     const url = await uploadBuffer(`pod-pilot/designs/${id}${ext}`, buffer, mimeType);
-    await addDesignToLibrary({ id, url, source: 'generated', prompt });
+    await addDesignToLibrary({ id, url, source: mode === 'generate' ? 'generated' : mode, prompt });
 
     res.json({ design: { id, url } });
   } catch (err) {

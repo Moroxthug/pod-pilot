@@ -121,6 +121,13 @@ body {
 .generate-divider::before { left: 0; }
 .generate-divider::after { right: 0; }
 
+.ai-mode-tabs { display: flex; gap: 4px; background: var(--bg-elevated); padding: 4px; border-radius: 8px; }
+.ai-mode-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ai-mode-btn.active { background: var(--accent); color: white; }
+#ai-remix-picker { margin-bottom: 12px; }
+#ai-remix-grid img { transition: outline 0.1s ease; }
+#ai-remix-grid img.selected { outline: 3px solid var(--accent); outline-offset: -3px; }
+
 .template-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 6px; }
 .template-option {
   border: 2px solid var(--border);
