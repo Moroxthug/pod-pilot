@@ -9,7 +9,8 @@ const sharp = require('sharp');
 
 const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
 const { composeMockupByStyle } = require('./lib/mockupEngine');
-const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
+const { generateDesignImage, analyzeDesign, removeBackgroundFromImage } = require('./lib/aiDesign');
+const { upscaleImage } = require('./lib/upscale');
 const { researchTrends } = require('./lib/trendResearch');
 const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
 const { readPricingPresets, addPricingPreset, removePricingPreset } = require('./lib/pricingPresets');
@@ -200,6 +201,59 @@ app.post('/api/designs/analyze', memoryUpload.single('design'), async (req, res)
 
     const analysis = await analyzeDesign({ imageBuffer, mimeType });
     res.json({ analysis });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Image tools (Remove Background / Upscale) ----------
+// Standalone utilities that work on ANY uploaded image, not just our own AI generations
+// (the chroma-key trick above only works because we control the generation prompt).
+
+app.post('/api/tools/remove-background', memoryUpload.single('image'), async (req, res) => {
+  try {
+    let imageBuffer, mimeType;
+    if (req.file) {
+      imageBuffer = req.file.buffer;
+      mimeType = req.file.mimetype;
+    } else if (req.body.designUrl) {
+      imageBuffer = await fetchBuffer(req.body.designUrl);
+      mimeType = 'image/png';
+    } else {
+      return res.status(400).json({ error: 'designUrl or an uploaded image is required' });
+    }
+
+    const { buffer, mimeType: outMimeType } = await removeBackgroundFromImage({ imageBuffer, mimeType });
+
+    const id = crypto.randomUUID();
+    const url = await uploadBuffer(`pod-pilot/designs/${id}.png`, buffer, outMimeType);
+    await addDesignToLibrary({ id, url, source: 'remove-background' });
+
+    res.json({ design: { id, url } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/tools/upscale', memoryUpload.single('image'), async (req, res) => {
+  try {
+    let imageBuffer;
+    if (req.file) {
+      imageBuffer = req.file.buffer;
+    } else if (req.body.designUrl) {
+      imageBuffer = await fetchBuffer(req.body.designUrl);
+    } else {
+      return res.status(400).json({ error: 'designUrl or an uploaded image is required' });
+    }
+
+    const factor = Number(req.body.factor) || 2;
+    const buffer = await upscaleImage(imageBuffer, factor);
+
+    const id = crypto.randomUUID();
+    const url = await uploadBuffer(`pod-pilot/designs/${id}.png`, buffer, 'image/png');
+    await addDesignToLibrary({ id, url, source: `upscale-${factor}x` });
+
+    res.json({ design: { id, url } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

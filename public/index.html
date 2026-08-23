@@ -55,6 +55,10 @@
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v8M12.5 8.2c0-1-1-1.7-2.5-1.7s-2.5.7-2.5 1.7 1 1.3 2.5 1.5 2.5.6 2.5 1.6-1 1.7-2.5 1.7-2.5-.6-2.5-1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           Pricing
         </button>
+        <button class="tab" data-tab="tools">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M12.5 3.5l4 4-7 7-4.5 1 1-4.5 7-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Tools
+        </button>
       </nav>
 
       <button id="theme-toggle-btn" class="theme-toggle" title="Toggle dark mode">
@@ -446,6 +450,59 @@
       </div>
     </section>
 
+    <!-- TOOLS TAB -->
+    <section class="panel hidden" id="tab-tools">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Remove Background</h2>
+          <p class="muted">Works on any photo or image — not just AI-generated designs. Uses AI to redraw the background as flat green, then keys it out to true transparency.</p>
+          <div id="tool-rmbg-dropzone" class="dropzone">
+            <div id="tool-rmbg-empty">
+              <p class="dz-title">Drop an image here</p>
+              <p class="dz-sub">or click to browse — PNG, JPG, WEBP</p>
+            </div>
+            <img id="tool-rmbg-preview" class="hidden" alt="preview" />
+            <input id="tool-rmbg-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+          </div>
+          <button id="tool-rmbg-run-btn" class="btn primary" disabled>Remove Background</button>
+        </div>
+
+        <div class="card">
+          <h2>Upscale</h2>
+          <p class="muted">Increases resolution via high-quality resampling. Never alters or reinterprets the design — only resizes it, so nothing changes except pixel dimensions.</p>
+          <div id="tool-upscale-dropzone" class="dropzone">
+            <div id="tool-upscale-empty">
+              <p class="dz-title">Drop an image here</p>
+              <p class="dz-sub">or click to browse — PNG, JPG, WEBP</p>
+            </div>
+            <img id="tool-upscale-preview" class="hidden" alt="preview" />
+            <input id="tool-upscale-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+          </div>
+          <div class="form-row">
+            <label>Scale factor
+              <select id="tool-upscale-factor">
+                <option value="2">2×</option>
+                <option value="3">3×</option>
+                <option value="4">4×</option>
+              </select>
+            </label>
+          </div>
+          <button id="tool-upscale-run-btn" class="btn primary" disabled>Upscale</button>
+        </div>
+      </div>
+
+      <div class="card" id="tool-result-card" style="display:none;">
+        <h2>Result</h2>
+        <div class="tool-result-row">
+          <img id="tool-result-img" alt="result" />
+          <div class="tool-result-actions">
+            <button id="tool-result-use-btn" class="btn primary">Use as Design</button>
+            <a id="tool-result-download" class="btn ghost" download="pod-pilot-tool-result.png">Download</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
       </main>
     </div>
   </div>
@@ -456,5 +513,6 @@
   <script src="/canvas.js"></script>
   <script src="/pricing.js"></script>
   <script src="/dashboard.js"></script>
+  <script src="/tools.js"></script>
 </body>
 </html>
