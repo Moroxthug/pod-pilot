@@ -399,6 +399,46 @@ document.getElementById('listing-form').addEventListener('submit', async e => {
   document.getElementById('listing-tags').innerHTML = data.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
 });
 
+// ---------- Etsy connection ----------
+async function refreshEtsyStatus() {
+  const statusText = document.getElementById('etsy-status-text');
+  const connectBtn = document.getElementById('etsy-connect-btn');
+  const disconnectBtn = document.getElementById('etsy-disconnect-btn');
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('etsy') === 'connected') {
+    statusText.textContent = 'Just connected!';
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (params.get('etsy') === 'error') {
+    statusText.textContent = `Connection failed: ${params.get('reason') || 'unknown error'}`;
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  const res = await fetch('/api/etsy/status');
+  const data = await res.json();
+
+  if (data.connected) {
+    statusText.textContent = `Connected to Etsy shop "${data.shopName || data.shopId}".`;
+    connectBtn.style.display = 'none';
+    disconnectBtn.style.display = 'inline-block';
+  } else {
+    statusText.textContent = 'Not connected to Etsy yet.';
+    connectBtn.style.display = 'inline-block';
+    disconnectBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('etsy-connect-btn').addEventListener('click', () => {
+  window.location.href = '/api/etsy/connect';
+});
+
+document.getElementById('etsy-disconnect-btn').addEventListener('click', async () => {
+  await fetch('/api/etsy/disconnect', { method: 'POST' });
+  refreshEtsyStatus();
+});
+
+refreshEtsyStatus();
+
 // ---------- Batch processing ----------
 const batchRunBtn = document.getElementById('batch-run-btn');
 

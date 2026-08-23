@@ -15,6 +15,7 @@ const { researchTrends } = require('./lib/trendResearch');
 const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
 const { readPricingPresets, addPricingPreset, removePricingPreset } = require('./lib/pricingPresets');
 const { readStats, incrementMockupCount } = require('./lib/stats');
+const etsy = require('./lib/etsyClient');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -419,6 +420,76 @@ app.post('/api/listing/generate', (req, res) => {
 function capitalize(s) {
   return String(s).replace(/\b\w/g, c => c.toUpperCase());
 }
+
+// ---------- Etsy connection (OAuth 2.0 + PKCE) ----------
+
+app.get('/api/etsy/connect', async (req, res) => {
+  try {
+    const state = crypto.randomUUID();
+    const { codeVerifier, codeChallenge } = etsy.generatePkce();
+    await etsy.savePendingAuth(state, codeVerifier);
+    res.redirect(etsy.buildAuthorizeUrl({ state, codeChallenge }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/etsy/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    if (error) return res.redirect(`/?etsy=error&reason=${encodeURIComponent(error_description || error)}`);
+    if (!code || !state) return res.redirect('/?etsy=error&reason=missing_code_or_state');
+
+    const pending = await etsy.consumePendingAuth(state);
+    if (!pending) return res.redirect('/?etsy=error&reason=expired_or_unknown_state');
+
+    const tokenResponse = await etsy.exchangeCodeForTokens(code, pending.codeVerifier);
+    const accessToken = tokenResponse.access_token;
+    const refreshToken = tokenResponse.refresh_token;
+    const expiresAt = Date.now() + tokenResponse.expires_in * 1000;
+
+    const me = await etsy.apiRequest('/users/me', { accessToken });
+    const shops = await etsy.apiRequest(`/users/${me.user_id}/shops`, { accessToken }).catch(() => null);
+
+    await etsy.writeTokens({
+      accessToken,
+      refreshToken,
+      expiresAt,
+      userId: me.user_id,
+      shopId: shops?.shop_id || null,
+      shopName: shops?.shop_name || null,
+      connectedAt: new Date().toISOString()
+    });
+
+    res.redirect('/?etsy=connected');
+  } catch (err) {
+    res.redirect(`/?etsy=error&reason=${encodeURIComponent(err.message)}`);
+  }
+});
+
+app.get('/api/etsy/status', async (req, res) => {
+  try {
+    const tokens = await etsy.readTokens();
+    if (!tokens) return res.json({ connected: false });
+    res.json({
+      connected: true,
+      shopId: tokens.shopId,
+      shopName: tokens.shopName,
+      connectedAt: tokens.connectedAt
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/etsy/disconnect', async (req, res) => {
+  try {
+    await etsy.disconnect();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ---------- Trend research ----------
 
