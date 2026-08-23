@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "generate:templates": "node -e \"require('./templates/generateBaseTemplates').generateBaseTemplates({force:true}).then(()=>console.log('done'))\""
+    "generate:templates": "node -e \"require('./templates/generateBaseTemplates').generateBaseTemplates({force:true}).then(()=>console.log('done'))\"",
+    "generate:photo-templates": "node templates/generatePhotoTemplates.js"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

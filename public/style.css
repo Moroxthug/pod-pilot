@@ -129,11 +129,23 @@ body {
   cursor: pointer;
   background: var(--bg-elevated);
   transition: border-color 0.15s ease;
+  position: relative;
 }
 .template-option.selected { border-color: var(--accent); }
 .template-option img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .template-option .label { font-size: 11px; padding: 6px 8px; color: var(--text-muted); text-align: center; }
 .template-option.selected .label { color: var(--text); }
+.style-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
 
 .analysis-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .analysis-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; font-size: 13px; align-items: start; }

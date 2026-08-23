@@ -16,17 +16,20 @@ const GARMENTS = {
   tshirt: {
     name: 'T-Shirt',
     colors: ['black', 'white', 'gray'],
-    printArea: { x: 780, y: 630, w: 440, h: 440 }
+    printArea: { x: 780, y: 630, w: 440, h: 440 },
+    photoPrintArea: { x: 760, y: 640, w: 480, h: 480 }
   },
   hoodie: {
     name: 'Hoodie',
     colors: ['black', 'white'],
-    printArea: { x: 790, y: 800, w: 420, h: 420 }
+    printArea: { x: 790, y: 800, w: 420, h: 420 },
+    photoPrintArea: { x: 760, y: 980, w: 480, h: 420 }
   },
   sweatshirt: {
     name: 'Sweatshirt',
     colors: ['black', 'white'],
-    printArea: { x: 790, y: 720, w: 420, h: 420 }
+    printArea: { x: 790, y: 720, w: 420, h: 420 },
+    photoPrintArea: { x: 750, y: 700, w: 500, h: 500 }
   }
 };
 
@@ -43,8 +46,23 @@ function buildDefaultTemplateList() {
         colorName: color.label,
         printArea: garment.printArea,
         source: 'default',
+        style: 'flat',
         baseImage: `/templates-static/${garmentId}-${colorId}.png`
       });
+
+      if (garment.photoPrintArea) {
+        list.push({
+          id: `${garmentId}-${colorId}-photo`,
+          garment: garmentId,
+          garmentName: garment.name,
+          color: colorId,
+          colorName: color.label,
+          printArea: garment.photoPrintArea,
+          source: 'default',
+          style: 'photo',
+          baseImage: `/templates-photo/${garmentId}-${colorId}.jpg`
+        });
+      }
     }
   }
   return list;

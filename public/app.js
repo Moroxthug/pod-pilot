@@ -142,11 +142,14 @@ async function loadTemplates() {
 function renderTemplatePicker(containerId, selectedSet, onChange) {
   const picker = document.getElementById(containerId);
   picker.innerHTML = '';
-  for (const tpl of state.templates) {
+  const sorted = [...state.templates].sort((a, b) => (a.style === 'photo' ? -1 : 0) - (b.style === 'photo' ? -1 : 0));
+  for (const tpl of sorted) {
     const el = document.createElement('div');
     el.className = 'template-option';
     if (selectedSet.has(tpl.id)) el.classList.add('selected');
+    const styleBadge = tpl.style === 'photo' ? '<span class="style-badge">Photo</span>' : '';
     el.innerHTML = `<img src="${tpl.baseImage}" alt="${tpl.garmentName} ${tpl.colorName}" />
+      ${styleBadge}
       <div class="label">${tpl.garmentName}<br>${tpl.colorName}</div>`;
     el.addEventListener('click', () => {
       if (selectedSet.has(tpl.id)) {

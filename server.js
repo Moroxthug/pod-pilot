@@ -8,7 +8,7 @@ const archiver = require('archiver');
 const sharp = require('sharp');
 
 const { CANVAS, buildDefaultTemplateList } = require('./templates/definitions');
-const { composeMockup } = require('./lib/mockupEngine');
+const { composeMockupByStyle } = require('./lib/mockupEngine');
 const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
 const { researchTrends } = require('./lib/trendResearch');
 const {
@@ -214,11 +214,10 @@ app.post('/api/mockups/generate', async (req, res) => {
       const baseImageUrl = tpl.baseImage.startsWith('http') ? tpl.baseImage : `${origin}${tpl.baseImage}`;
       const baseImageBuffer = await fetchBuffer(baseImageUrl);
 
-      const composedBuffer = await composeMockup({
+      const composedBuffer = await composeMockupByStyle(tpl.style, {
         baseImageBuffer,
         designBuffer,
-        printArea: tpl.printArea,
-        canvasSize: CANVAS
+        printArea: tpl.printArea
       });
 
       const outName = `${tpl.garmentName.replace(/\s+/g, '')}-${tpl.colorName.replace(/\s+/g, '')}-${tid}.png`;
