@@ -13,6 +13,8 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
     tab.classList.add('active');
     document.getElementById(`tab-${tab.dataset.tab}`).classList.remove('hidden');
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) pageTitle.textContent = tab.textContent.trim();
   });
 });
 
