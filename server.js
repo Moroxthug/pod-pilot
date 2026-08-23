@@ -311,7 +311,7 @@ app.post('/api/canvas/save', async (req, res) => {
 
 app.post('/api/mockups/generate', async (req, res) => {
   try {
-    const { designUrl, templateIds } = req.body;
+    const { designUrl, templateIds, placement } = req.body;
     if (!designUrl) return res.status(400).json({ error: 'designUrl is required' });
     if (!Array.isArray(templateIds) || templateIds.length === 0) {
       return res.status(400).json({ error: 'templateIds must be a non-empty array' });
@@ -334,7 +334,8 @@ app.post('/api/mockups/generate', async (req, res) => {
       const composedBuffer = await composeMockupByStyle(tpl.style, {
         baseImageBuffer,
         designBuffer,
-        printArea: tpl.printArea
+        printArea: tpl.printArea,
+        placement
       });
 
       const outName = `${tpl.garmentName.replace(/\s+/g, '')}-${tpl.colorName.replace(/\s+/g, '')}-${tid}.png`;

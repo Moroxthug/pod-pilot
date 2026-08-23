@@ -299,9 +299,80 @@ document.getElementById('template-form').addEventListener('submit', async e => {
   loadTemplates();
 });
 
+// ---------- Placement adjustment ----------
+// One shared drag/scale/rotate transform, applied identically across every selected template's
+// own print area — lets the user override the default auto-fit-centered placement.
+state.placement = null;
+let placementCanvasFabric = null;
+let placementImageObj = null;
+
+function initPlacementCanvas() {
+  if (placementCanvasFabric) return placementCanvasFabric;
+  placementCanvasFabric = new fabric.Canvas('placement-canvas', { selection: false });
+  placementCanvasFabric.on('object:modified', updatePlacementFromCanvas);
+  placementCanvasFabric.on('object:scaling', updatePlacementFromCanvas);
+  placementCanvasFabric.on('object:moving', updatePlacementFromCanvas);
+  placementCanvasFabric.on('object:rotating', updatePlacementFromCanvas);
+  return placementCanvasFabric;
+}
+
+async function loadDesignIntoPlacementCanvas(designUrl) {
+  const canvas = initPlacementCanvas();
+  canvas.clear();
+  placementImageObj = null;
+  const size = canvas.getWidth();
+  const img = await fabric.FabricImage.fromURL(designUrl, { crossOrigin: 'anonymous' });
+  const baselineSize = size * 0.6;
+  const scaleToFit = baselineSize / Math.max(img.width, img.height);
+  img.set({
+    left: size / 2,
+    top: size / 2,
+    originX: 'center',
+    originY: 'center',
+    scaleX: scaleToFit,
+    scaleY: scaleToFit
+  });
+  img._baselineScale = scaleToFit;
+  img._loadedUrl = designUrl;
+  placementImageObj = img;
+  canvas.add(img);
+  canvas.setActiveObject(img);
+  canvas.renderAll();
+  state.placement = null;
+}
+
+function updatePlacementFromCanvas() {
+  if (!placementImageObj) return;
+  const size = placementCanvasFabric.getWidth();
+  const obj = placementImageObj;
+  state.placement = {
+    offsetXPct: (obj.left - size / 2) / size,
+    offsetYPct: (obj.top - size / 2) / size,
+    scalePct: obj.scaleX / obj._baselineScale,
+    rotationDeg: Math.round(obj.angle || 0)
+  };
+}
+
+document.getElementById('placement-reset-btn').addEventListener('click', () => {
+  if (state.design) loadDesignIntoPlacementCanvas(state.design.url);
+});
+
+function refreshPlacementCard() {
+  const card = document.getElementById('placement-card');
+  if (state.design && state.selectedTemplateIds.size > 0) {
+    card.style.display = 'block';
+    if (!placementImageObj || placementImageObj._loadedUrl !== state.design.url) {
+      loadDesignIntoPlacementCanvas(state.design.url);
+    }
+  } else {
+    card.style.display = 'none';
+  }
+}
+
 // ---------- Generate mockups ----------
 function updateGenerateButton() {
   generateBtn.disabled = !(state.design && state.selectedTemplateIds.size > 0);
+  refreshPlacementCard();
 }
 
 generateBtn.addEventListener('click', async () => {
@@ -313,7 +384,8 @@ generateBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         designUrl: state.design.url,
-        templateIds: Array.from(state.selectedTemplateIds)
+        templateIds: Array.from(state.selectedTemplateIds),
+        placement: state.placement
       })
     });
     if (!res.ok) {
