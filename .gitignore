@@ -1,11 +1,8 @@
 node_modules/
-uploads/designs/*
-uploads/templates/*
-output/*
-public/templates-static/*
-!uploads/designs/.gitkeep
-!uploads/templates/.gitkeep
-!output/.gitkeep
-!public/templates-static/.gitkeep
-data/customTemplates.json
+.vercel/
+.env
+.env.local
 *.log
+
+.vercel
+.env*

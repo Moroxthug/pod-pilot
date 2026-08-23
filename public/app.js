@@ -2,7 +2,7 @@ const state = {
   design: null, // { id, url }
   templates: [],
   selectedTemplateIds: new Set(),
-  lastBatchId: null
+  lastMockups: null
 };
 
 // ---------- Tabs ----------
@@ -167,7 +167,7 @@ generateBtn.addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        designId: state.design.id,
+        designUrl: state.design.url,
         templateIds: Array.from(state.selectedTemplateIds)
       })
     });
@@ -177,7 +177,7 @@ generateBtn.addEventListener('click', async () => {
       return;
     }
     const data = await res.json();
-    state.lastBatchId = data.batchId;
+    state.lastMockups = data.mockups;
     renderResults(data.mockups);
   } finally {
     generateBtn.textContent = 'Generate Mockups';
@@ -198,9 +198,35 @@ function renderResults(mockups) {
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-document.getElementById('download-all-btn').addEventListener('click', () => {
-  if (!state.lastBatchId) return;
-  window.location.href = `/api/mockups/download/${state.lastBatchId}`;
+document.getElementById('download-all-btn').addEventListener('click', async () => {
+  if (!state.lastMockups || !state.lastMockups.length) return;
+  const btn = document.getElementById('download-all-btn');
+  btn.disabled = true;
+  btn.textContent = 'Zipping…';
+  try {
+    const res = await fetch('/api/mockups/zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mockups: state.lastMockups })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Zip failed' }));
+      alert(err.error || 'Zip failed');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pod-pilot-mockups.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Download All (.zip)';
+  }
 });
 
 // ---------- Listing generator ----------

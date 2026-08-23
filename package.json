@@ -6,12 +6,17 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "generate:templates": "node -e \"require('./templates/generateBaseTemplates').generateBaseTemplates({force:true}).then(()=>console.log('done'))\""
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "archiver": "^7.0.1",
     "express": "^4.21.2",
     "multer": "^2.0.1",
     "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
   }
 }
