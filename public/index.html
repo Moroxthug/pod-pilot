@@ -23,7 +23,11 @@
       </div>
 
       <nav class="side-nav">
-        <button class="tab active" data-tab="mockups">
+        <button class="tab active" data-tab="dashboard">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="3" width="6" height="9" rx="1.2" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="11" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="14" width="6" height="3" rx="1.2" stroke="currentColor" stroke-width="1.6"/></svg>
+          Dashboard
+        </button>
+        <button class="tab" data-tab="mockups">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="7.5" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 13l4-4 3 3 4-5 3 4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
           Mockups
         </button>
@@ -62,13 +66,68 @@
 
     <div class="main-area">
       <header class="topheader">
-        <h1 id="page-title">Mockups</h1>
+        <h1 id="page-title">Dashboard</h1>
       </header>
 
       <main class="app">
 
+    <!-- DASHBOARD TAB -->
+    <section class="panel" id="tab-dashboard">
+      <p id="dashboard-greeting" class="dashboard-greeting">Welcome back</p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Designs</span>
+          <span class="stat-value" id="stat-designs">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Mockups generated</span>
+          <span class="stat-value" id="stat-mockups">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Templates available</span>
+          <span class="stat-value" id="stat-templates">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Pricing presets</span>
+          <span class="stat-value" id="stat-presets">—</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Quick actions</h2>
+        <div class="quick-actions">
+          <button class="quick-action" data-goto-tab="mockups" data-focus="generate-form">
+            <span class="quick-action-icon">✦</span>
+            <span>Generate a design</span>
+          </button>
+          <button class="quick-action" data-goto-tab="canvas">
+            <span class="quick-action-icon">✎</span>
+            <span>Open Canvas</span>
+          </button>
+          <button class="quick-action" data-goto-tab="batch">
+            <span class="quick-action-icon">▤</span>
+            <span>Run a batch</span>
+          </button>
+          <button class="quick-action" data-goto-tab="trends">
+            <span class="quick-action-icon">↗</span>
+            <span>Research trends</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="results-header">
+          <h2>Recent designs</h2>
+        </div>
+        <div id="dashboard-recent-grid" class="canvas-designs-grid dashboard-recent-grid">
+          <p class="muted">No designs yet — generate or upload your first one.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- MOCKUPS TAB -->
-    <section class="panel" id="tab-mockups">
+    <section class="panel hidden" id="tab-mockups">
       <div class="grid-2">
         <div class="card dropzone-card">
           <h2>Design</h2>
@@ -396,5 +455,6 @@
   <script src="/app.js"></script>
   <script src="/canvas.js"></script>
   <script src="/pricing.js"></script>
+  <script src="/dashboard.js"></script>
 </body>
 </html>

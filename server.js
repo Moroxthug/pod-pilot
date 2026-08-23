@@ -13,6 +13,7 @@ const { generateDesignImage, analyzeDesign } = require('./lib/aiDesign');
 const { researchTrends } = require('./lib/trendResearch');
 const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
 const { readPricingPresets, addPricingPreset, removePricingPreset } = require('./lib/pricingPresets');
+const { readStats, incrementMockupCount } = require('./lib/stats');
 const {
   uploadBuffer,
   fetchBuffer,
@@ -287,6 +288,8 @@ app.post('/api/mockups/generate', async (req, res) => {
       results.push({ templateId: tid, garmentName: tpl.garmentName, colorName: tpl.colorName, url });
     }
 
+    if (results.length) await incrementMockupCount(results.length);
+
     res.json({ mockups: results });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -404,6 +407,29 @@ app.delete('/api/pricing/presets/:id', async (req, res) => {
     const removed = await removePricingPreset(req.params.id);
     if (!removed) return res.status(404).json({ error: 'Preset not found' });
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Dashboard ----------
+
+app.get('/api/dashboard/stats', async (req, res) => {
+  try {
+    const [designs, customTemplates, stats, pricingPresets] = await Promise.all([
+      readDesignsLibrary(),
+      readCustomTemplates(),
+      readStats(),
+      readPricingPresets()
+    ]);
+
+    res.json({
+      designCount: designs.length,
+      mockupsGenerated: stats.mockupsGenerated || 0,
+      templateCount: buildDefaultTemplateList().length + customTemplates.length,
+      pricingPresetCount: pricingPresets.length,
+      recentDesigns: designs.slice(0, 8)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
