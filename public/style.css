@@ -214,6 +214,20 @@ body {
 .template-option img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .template-option .label { font-size: 11px; padding: 6px 8px; color: var(--text-muted); text-align: center; }
 .template-option.selected .label { color: var(--text); }
+.wardrobe-model-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.wardrobe-model-option {
+  width: 84px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg);
+  transition: border-color 0.15s ease;
+}
+.wardrobe-model-option.active { border-color: var(--accent); }
+.wardrobe-model-option img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.wardrobe-model-option .label { font-size: 11px; padding: 4px 6px; color: var(--text-muted); text-align: center; }
+.wardrobe-model-option.active .label { color: var(--text); }
 .style-badge {
   position: absolute;
   top: 6px;

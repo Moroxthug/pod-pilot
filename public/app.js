@@ -209,12 +209,18 @@ async function loadTemplates() {
   renderTemplatePicker('template-picker', state.selectedTemplateIds, updateGenerateButton);
   renderTemplatePicker('batch-template-picker', state.batchSelectedTemplateIds, updateBatchRunButton);
   renderTemplateManager();
+  renderWardrobeModelPicker();
 }
 
+// Wardrobe templates (id starts with "wardrobe-") get their own two-step picker below instead
+// of cluttering this flat grid — six models x four garments x four colors would otherwise bury
+// the dozen "regular" templates in ~96 thumbnails.
 function renderTemplatePicker(containerId, selectedSet, onChange) {
   const picker = document.getElementById(containerId);
   picker.innerHTML = '';
-  const sorted = [...state.templates].sort((a, b) => (a.style === 'photo' ? -1 : 0) - (b.style === 'photo' ? -1 : 0));
+  const sorted = [...state.templates]
+    .filter(t => !t.id.startsWith('wardrobe-'))
+    .sort((a, b) => (a.style === 'photo' ? -1 : 0) - (b.style === 'photo' ? -1 : 0));
   for (const tpl of sorted) {
     const el = document.createElement('div');
     el.className = 'template-option';
@@ -240,7 +246,7 @@ function renderTemplatePicker(containerId, selectedSet, onChange) {
 function renderTemplateManager() {
   const defaultGrid = document.getElementById('default-template-grid');
   const customGrid = document.getElementById('custom-template-grid');
-  const defaults = state.templates.filter(t => t.source === 'default');
+  const defaults = state.templates.filter(t => t.source === 'default' && !t.id.startsWith('wardrobe-'));
   const custom = state.templates.filter(t => t.source === 'upload');
 
   defaultGrid.innerHTML = defaults.map(t => `
@@ -263,6 +269,58 @@ function renderTemplateManager() {
       await fetch(`/api/templates/${btn.dataset.remove}`, { method: 'DELETE' });
       state.selectedTemplateIds.delete(btn.dataset.remove);
       loadTemplates();
+    });
+  });
+}
+
+// ---------- Model Wardrobe (two-step: pick a model, then a garment/color combo) ----------
+state.activeWardrobeModelId = null;
+
+function renderWardrobeModelPicker() {
+  const wardrobeTemplates = state.templates.filter(t => t.id.startsWith('wardrobe-'));
+  const models = [...new Map(wardrobeTemplates.map(t => [t.modelId, t])).values()];
+  if (!state.activeWardrobeModelId && models.length) state.activeWardrobeModelId = models[0].modelId;
+
+  const picker = document.getElementById('wardrobe-model-picker');
+  picker.innerHTML = models.map(m => `
+    <div class="wardrobe-model-option ${m.modelId === state.activeWardrobeModelId ? 'active' : ''}" data-model-id="${m.modelId}">
+      <img src="${m.baseImage}" alt="${m.modelLabel}" />
+      <div class="label">${m.modelLabel}</div>
+    </div>
+  `).join('');
+
+  picker.querySelectorAll('.wardrobe-model-option').forEach(el => {
+    el.addEventListener('click', () => {
+      state.activeWardrobeModelId = el.dataset.modelId;
+      renderWardrobeModelPicker();
+    });
+  });
+
+  renderWardrobeComboPicker();
+}
+
+function renderWardrobeComboPicker() {
+  const picker = document.getElementById('wardrobe-combo-picker');
+  const combos = state.templates.filter(t => t.id.startsWith('wardrobe-') && t.modelId === state.activeWardrobeModelId);
+
+  picker.innerHTML = combos.map(tpl => `
+    <div class="template-option ${state.selectedTemplateIds.has(tpl.id) ? 'selected' : ''}" data-id="${tpl.id}">
+      <img src="${tpl.baseImage}" alt="${tpl.garmentName} ${tpl.colorName}" />
+      <div class="label">${tpl.garmentName}<br>${tpl.colorName.split(' — ')[0]}</div>
+    </div>
+  `).join('');
+
+  picker.querySelectorAll('.template-option').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      if (state.selectedTemplateIds.has(id)) {
+        state.selectedTemplateIds.delete(id);
+        el.classList.remove('selected');
+      } else {
+        state.selectedTemplateIds.add(id);
+        el.classList.add('selected');
+      }
+      updateGenerateButton();
     });
   });
 }
@@ -324,7 +382,7 @@ function garmentTypeForId(id) {
 function pickOutlineForSelection() {
   for (const id of state.selectedTemplateIds) {
     const tpl = state.templates.find(t => t.id === id);
-    if (tpl && (tpl.garment === 'hoodie' || tpl.garment === 'sweatshirt')) return 'sweatshirt';
+    if (tpl && (tpl.garment === 'hoodie' || tpl.garment === 'sweatshirt' || tpl.garment === 'jumper')) return 'sweatshirt';
   }
   return 'tshirt';
 }

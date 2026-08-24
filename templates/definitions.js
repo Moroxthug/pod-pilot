@@ -45,6 +45,63 @@ const MODEL_TEMPLATES = [
   { id: 'sweatshirt-model-female-white', garmentName: 'Sweatshirt (Model)', colorName: 'White — Female', printArea: { x: 640, y: 750, w: 720, h: 440 } }
 ];
 
+// Model Wardrobe: a reusable roster of model identities (see templates/generateModelVariants.js)
+// — each generated once, then edited (not regenerated) into every garment x color combo, so the
+// same person wears every variant. TODO (noted for later): more models, and reusing these same
+// identities for background swaps, is a natural extension of this same approach.
+const MODEL_ROSTER = [
+  { id: 'male-1', label: 'Model 1', gender: 'Male' },
+  { id: 'male-2', label: 'Model 2', gender: 'Male' },
+  { id: 'male-3', label: 'Model 3', gender: 'Male' },
+  { id: 'female-1', label: 'Model 4', gender: 'Female' },
+  { id: 'female-2', label: 'Model 5', gender: 'Female' },
+  { id: 'female-3', label: 'Model 6', gender: 'Female' }
+];
+
+const WARDROBE_GARMENTS = {
+  tshirt: 'T-Shirt',
+  hoodie: 'Hoodie',
+  sweatshirt: 'Sweatshirt',
+  jumper: 'Jumper'
+};
+
+const WARDROBE_COLORS = {
+  black: 'Black',
+  white: 'White',
+  'heather-gray': 'Heather Gray',
+  navy: 'Navy'
+};
+
+// Same print-area box for every garment on a given model — all generated with identical
+// straight-on, mid-thigh-up framing, so one chest-centered box works across the set (same
+// approach as MODEL_TEMPLATES above).
+const WARDROBE_PRINT_AREA = { x: 640, y: 680, w: 720, h: 440 };
+
+function buildModelWardrobeList() {
+  const list = [];
+  for (const model of MODEL_ROSTER) {
+    for (const garmentId of Object.keys(WARDROBE_GARMENTS)) {
+      for (const colorId of Object.keys(WARDROBE_COLORS)) {
+        list.push({
+          id: `wardrobe-${model.id}-${garmentId}-${colorId}`,
+          garment: garmentId,
+          garmentName: WARDROBE_GARMENTS[garmentId],
+          color: colorId,
+          colorName: `${WARDROBE_COLORS[colorId]} — ${model.label}`,
+          printArea: WARDROBE_PRINT_AREA,
+          source: 'default',
+          style: 'photo',
+          baseImage: `/templates-model-v2/${model.id}-${garmentId}-${colorId}.jpg`,
+          modelId: model.id,
+          modelLabel: model.label,
+          modelGender: model.gender
+        });
+      }
+    }
+  }
+  return list;
+}
+
 function buildDefaultTemplateList() {
   const list = [];
   for (const [garmentId, garment] of Object.entries(GARMENTS)) {
@@ -95,7 +152,18 @@ function buildDefaultTemplateList() {
     });
   }
 
+  list.push(...buildModelWardrobeList());
+
   return list;
 }
 
-module.exports = { CANVAS, GARMENT_COLORS, GARMENTS, MODEL_TEMPLATES, buildDefaultTemplateList };
+module.exports = {
+  CANVAS,
+  GARMENT_COLORS,
+  GARMENTS,
+  MODEL_TEMPLATES,
+  MODEL_ROSTER,
+  WARDROBE_GARMENTS,
+  WARDROBE_COLORS,
+  buildDefaultTemplateList
+};
