@@ -15,6 +15,7 @@ const { researchTrends } = require('./lib/trendResearch');
 const { addDesignToLibrary, readDesignsLibrary, removeDesignFromLibrary } = require('./lib/designsLibrary');
 const { readPricingPresets, addPricingPreset, removePricingPreset } = require('./lib/pricingPresets');
 const { readStats, incrementMockupCount } = require('./lib/stats');
+const { readMockupsLibrary, addMockupsToLibrary, removeMockupsFromLibrary } = require('./lib/mockupsLibrary');
 const etsy = require('./lib/etsyClient');
 const {
   uploadBuffer,
@@ -323,7 +324,7 @@ app.post('/api/mockups/generate', async (req, res) => {
     const origin = originOf(req);
     const designBuffer = await fetchBuffer(designUrl);
 
-    const results = [];
+    const composed = [];
     for (const tid of templateIds) {
       const tpl = templateMap.get(tid);
       if (!tpl) continue;
@@ -341,12 +342,45 @@ app.post('/api/mockups/generate', async (req, res) => {
       const outName = `${tpl.garmentName.replace(/\s+/g, '')}-${tpl.colorName.replace(/\s+/g, '')}-${tid}.png`;
       const url = await uploadBuffer(`pod-pilot/mockups/${crypto.randomUUID()}-${outName}`, composedBuffer, 'image/png');
 
-      results.push({ templateId: tid, garmentName: tpl.garmentName, colorName: tpl.colorName, url });
+      composed.push({
+        id: crypto.randomUUID(),
+        url,
+        templateId: tid,
+        garmentName: tpl.garmentName,
+        colorName: tpl.colorName,
+        designUrl
+      });
     }
+
+    const results = composed.length ? await addMockupsToLibrary(composed) : [];
 
     if (results.length) await incrementMockupCount(results.length);
 
     res.json({ mockups: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Mockups library ----------
+
+app.get('/api/mockups/library', async (req, res) => {
+  try {
+    const mockups = await readMockupsLibrary();
+    res.json({ mockups });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/mockups/library/delete', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids must be a non-empty array' });
+    }
+    const { removedCount, mockups } = await removeMockupsFromLibrary(ids);
+    res.json({ ok: true, removedCount, mockups });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

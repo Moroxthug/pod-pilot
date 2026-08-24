@@ -444,6 +444,11 @@ generateBtn.addEventListener('click', async () => {
     const data = await res.json();
     state.lastMockups = data.mockups;
     renderResults(data.mockups);
+    // Prepend the freshly-generated entries directly instead of re-fetching the library from
+    // storage — a GET right after a write can briefly return a stale cached copy that doesn't
+    // include what was just added yet.
+    state.mockupLibrary = [...data.mockups, ...state.mockupLibrary];
+    renderMockupLibrary();
   } finally {
     generateBtn.textContent = 'Generate Mockups';
     updateGenerateButton();
@@ -466,6 +471,92 @@ function renderResults(mockups) {
 document.getElementById('download-all-btn').addEventListener('click', () => {
   downloadMockupsZip(state.lastMockups, document.getElementById('download-all-btn'), 'Download All (.zip)');
 });
+
+// ---------- Mockup library (browse/select/delete) ----------
+state.mockupLibrary = [];
+state.selectedMockupIds = new Set();
+
+async function loadMockupLibrary() {
+  const res = await fetch('/api/mockups/library');
+  const data = await res.json();
+  state.mockupLibrary = data.mockups;
+  state.selectedMockupIds.clear();
+  renderMockupLibrary();
+}
+
+function renderMockupLibrary() {
+  const grid = document.getElementById('mockup-library-grid');
+  const deleteBtn = document.getElementById('mockup-library-delete-btn');
+
+  if (!state.mockupLibrary.length) {
+    grid.innerHTML = '<p class="muted">No mockups generated yet.</p>';
+    deleteBtn.disabled = true;
+    return;
+  }
+
+  grid.innerHTML = state.mockupLibrary.map(m => `
+    <div class="result-item selectable" data-id="${m.id}">
+      <input type="checkbox" class="select-check" ${state.selectedMockupIds.has(m.id) ? 'checked' : ''} />
+      <img src="${m.url}" alt="${m.garmentName} ${m.colorName}" />
+      <div class="label">${m.garmentName} — ${m.colorName}</div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.result-item').forEach(el => {
+    const id = el.dataset.id;
+    if (state.selectedMockupIds.has(id)) el.classList.add('selected');
+    const toggle = () => {
+      if (state.selectedMockupIds.has(id)) {
+        state.selectedMockupIds.delete(id);
+        el.classList.remove('selected');
+      } else {
+        state.selectedMockupIds.add(id);
+        el.classList.add('selected');
+      }
+      el.querySelector('.select-check').checked = state.selectedMockupIds.has(id);
+      deleteBtn.disabled = state.selectedMockupIds.size === 0;
+    };
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('select-check')) return;
+      toggle();
+    });
+    el.querySelector('.select-check').addEventListener('click', toggle);
+  });
+
+  deleteBtn.disabled = state.selectedMockupIds.size === 0;
+}
+
+document.getElementById('mockup-library-select-all-btn').addEventListener('click', () => {
+  const allSelected = state.selectedMockupIds.size === state.mockupLibrary.length;
+  state.selectedMockupIds = allSelected ? new Set() : new Set(state.mockupLibrary.map(m => m.id));
+  renderMockupLibrary();
+});
+
+document.getElementById('mockup-library-delete-btn').addEventListener('click', async () => {
+  const ids = Array.from(state.selectedMockupIds);
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} mockup${ids.length > 1 ? 's' : ''}? This can't be undone.`)) return;
+  const btn = document.getElementById('mockup-library-delete-btn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+  try {
+    const res = await fetch('/api/mockups/library/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    const data = await res.json();
+    // Use the server's freshly-computed list directly rather than re-fetching — same
+    // stale-read-after-write hazard as on generate.
+    state.mockupLibrary = data.mockups;
+    state.selectedMockupIds.clear();
+    renderMockupLibrary();
+  } finally {
+    btn.textContent = 'Delete Selected';
+  }
+});
+
+loadMockupLibrary();
 
 async function downloadMockupsZip(mockups, btn, idleLabel) {
   if (!mockups || !mockups.length) return;

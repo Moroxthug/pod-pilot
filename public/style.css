@@ -237,9 +237,15 @@ body {
 /* ---------- Mockup results ---------- */
 .results-header { display: flex; align-items: center; justify-content: space-between; }
 .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 10px; }
-.result-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.result-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; position: relative; }
 .result-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .result-item .label { padding: 8px; font-size: 12px; color: var(--text-muted); }
+.result-item.selectable { cursor: pointer; }
+.result-item.selectable.selected { border-color: var(--accent, #7c5cff); box-shadow: 0 0 0 2px var(--accent, #7c5cff); }
+.result-item .select-check {
+  position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; cursor: pointer;
+  accent-color: var(--accent, #7c5cff);
+}
 
 /* ---------- Templates tab ---------- */
 .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
